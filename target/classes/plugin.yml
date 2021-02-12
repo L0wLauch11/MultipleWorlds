@@ -1,0 +1,15 @@
+main: me.lowlauch.multipleworlds.Main
+name: MultipleWorlds
+version: '1.0'
+description: Allows you to use multiple worlds on a freebuild server
+author: lowlauch
+commands:
+  mworld:
+    description: Switches worlds
+    aliases:
+      - mw
+      - switch
+permissions:
+  multipleworlds.switch:
+    description: Allows the player to switch worlds
+    default: true
