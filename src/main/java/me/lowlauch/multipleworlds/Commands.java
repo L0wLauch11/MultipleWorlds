@@ -95,9 +95,14 @@ public class Commands implements CommandExecutor
 
                     p.setLevel(destLevel);
                     p.setExp((float) destXp);
-                    p.setHealth(destHealth);
-                    p.setSaturation((float) destSaturation);
-                    p.setFoodLevel((int) destFood);
+
+                    // Prevent the player from dying instantly
+                    if(destHealth != 0)
+                    {
+                        p.setHealth(destHealth);
+                        p.setSaturation((float) destSaturation);
+                        p.setFoodLevel((int) destFood);
+                    }
 
                     p.getInventory().clear();
 
