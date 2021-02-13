@@ -12,6 +12,48 @@ import java.io.IOException;
 
 public class Commands implements CommandExecutor
 {
+    public void savePlayerData(Player p)
+    {
+        // Save the previous data world first
+        String uuid = p.getUniqueId().toString();
+        String savePath = uuid + "." + p.getWorld().getName();
+
+
+        // Create variables for everything we want to save
+        String inventoryString = StringInventory.itemStackArrayToBase64(p.getInventory().getContents());
+        String armorString = StringInventory.itemStackArrayToBase64(p.getInventory().getArmorContents());
+        String enderChestString = StringInventory.itemStackArrayToBase64(p.getEnderChest().getContents());
+        ItemStack rightHandItem = p.getInventory().getItemInOffHand();
+
+        double xp = p.getExp();
+        int level = p.getLevel();
+        double health = p.getHealth();
+        double sat = p.getSaturation();
+        double food = p.getFoodLevel();
+
+        Location loc = p.getLocation();
+
+        Location bedspawn = p.getBedSpawnLocation();
+
+        // Save the data
+        Main.getInstance().getConfig().set(savePath + ".inventory", inventoryString);
+        Main.getInstance().getConfig().set(savePath + ".armor", armorString);
+        Main.getInstance().getConfig().set(savePath + ".offhand", rightHandItem);
+        Main.getInstance().getConfig().set(savePath + ".enderchest", enderChestString);
+
+        Main.getInstance().getConfig().set(savePath + ".xp", xp);
+        Main.getInstance().getConfig().set(savePath + ".level", level);
+        Main.getInstance().getConfig().set(savePath + ".health", health);
+        Main.getInstance().getConfig().set(savePath + ".sat", sat);
+        Main.getInstance().getConfig().set(savePath + ".food", food);
+
+        Main.getInstance().getConfig().set(savePath + ".location", loc);
+        Main.getInstance().getConfig().set(savePath + ".bedspawn", bedspawn);
+
+        Main.getInstance().saveConfig();
+        Main.getInstance().reloadConfig();
+    }
+
 
     public boolean onCommand(CommandSender commandSender, Command command, String commandLabel, String[] args)
     {
@@ -23,42 +65,16 @@ public class Commands implements CommandExecutor
             Player p = (Player) commandSender;
 
             // Args have to be at least once
-            if(p.hasPermission("multipleworlds.switch") && args.length >= 1)
+            if(p.hasPermission("multipleworlds.switch") && args.length >= 1
+                    && !p.getWorld().getName().endsWith("_nether")
+                    && !p.getWorld().getName().endsWith("_end"))
             {
-                // Save the previous data world first
-                String uuid = p.getUniqueId().toString();
-                String savePath = uuid + "." + p.getWorld().getName();
-                String loadPath = uuid + "." + args[0];
-
-                // Create variables for everything we want to save
-                String inventoryString = StringInventory.itemStackArrayToBase64(p.getInventory().getContents());
-                String armorString = StringInventory.itemStackArrayToBase64(p.getInventory().getArmorContents());
-                String enderChestString = StringInventory.itemStackArrayToBase64(p.getEnderChest().getContents());
-                ItemStack rightHandItem = p.getInventory().getItemInOffHand();
-                double xp = p.getExp();
-                int level = p.getLevel();
-
-                Location loc = p.getLocation();
-
-                Location bedspawn = p.getBedSpawnLocation();
-
-                // Save the data
-                Main.getInstance().getConfig().set(savePath + ".inventory", inventoryString);
-                Main.getInstance().getConfig().set(savePath + ".armor", armorString);
-                Main.getInstance().getConfig().set(savePath + ".offhand", rightHandItem);
-                Main.getInstance().getConfig().set(savePath + ".enderchest", enderChestString);
-
-                Main.getInstance().getConfig().set(savePath + ".xp", xp);
-                Main.getInstance().getConfig().set(savePath + ".level", level);
-
-                Main.getInstance().getConfig().set(savePath + ".location", loc);
-                Main.getInstance().getConfig().set(savePath + ".bedspawn", bedspawn);
-
-                Main.getInstance().saveConfig();
-                Main.getInstance().reloadConfig();
+                savePlayerData(p);
 
                 // Switch world
                 // Load the data
+                String uuid = p.getUniqueId().toString();
+                String loadPath = uuid + "." + args[0];
                 String destInventoryString = Main.getInstance().getConfig().getString(loadPath + ".inventory");
 
                 if(destInventoryString != null) {
@@ -66,6 +82,9 @@ public class Commands implements CommandExecutor
                     String destEnderChestString = Main.getInstance().getConfig().getString(loadPath + ".enderchest");
                     double destXp = Main.getInstance().getConfig().getDouble(loadPath + ".xp");
                     int destLevel = Main.getInstance().getConfig().getInt(loadPath + ".level");
+                    double destHealth = Main.getInstance().getConfig().getDouble(loadPath + ".health");
+                    double destSaturation = Main.getInstance().getConfig().getDouble(loadPath + ".sat");
+                    double destFood = Main.getInstance().getConfig().getDouble(loadPath + ".food");
 
                     Location destLoc = Main.getInstance().getConfig().getLocation(loadPath + ".location");
                     Location destSpawnworldloc = Main.getInstance().getConfig().getLocation(loadPath + ".bedspawn");
@@ -76,6 +95,9 @@ public class Commands implements CommandExecutor
 
                     p.setLevel(destLevel);
                     p.setExp((float) destXp);
+                    p.setHealth(destHealth);
+                    p.setSaturation((float) destSaturation);
+                    p.setFoodLevel((int) destFood);
 
                     p.getInventory().clear();
 
@@ -98,10 +120,11 @@ public class Commands implements CommandExecutor
                     p.setExp(0f);
 
                     p.getInventory().clear();
-                    Bukkit.getServer().dispatchCommand(commandSender, "switch " + args[0]);
+                    p.updateInventory();
+                    savePlayerData(p);
                 }
 
-                commandSender.sendMessage("§7Welcome to" + "§6" + args[0] + "§7!");
+                commandSender.sendMessage("§7Welcome to §6" + args[0] + "§7!");
                 return true;
             }
         }
