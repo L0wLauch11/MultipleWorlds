@@ -119,8 +119,9 @@ public class Commands implements CommandExecutor
                     p.updateInventory();
                 } else
                 {
-                    Location destLocation = new Location(Bukkit.getServer().getWorld(args[0]), 0, 80, 0);
+                    Location destLocation = new Location(Bukkit.getServer().getWorld(args[0]), 0, 60, 0);
                     p.teleport(destLocation);
+                    p.setBedSpawnLocation(destLocation, true);
                     p.setLevel(0);
                     p.setExp(0f);
 
