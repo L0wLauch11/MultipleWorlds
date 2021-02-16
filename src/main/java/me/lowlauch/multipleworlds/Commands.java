@@ -1,6 +1,7 @@
 package me.lowlauch.multipleworlds;
 
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -88,10 +89,22 @@ public class Commands implements CommandExecutor
 
                     Location destLoc = Main.getInstance().getConfig().getLocation(loadPath + ".location");
                     Location destSpawnworldloc = Main.getInstance().getConfig().getLocation(loadPath + ".bedspawn");
+                    Location fallbackLoc = new Location(Bukkit.getServer().getWorld(args[0]), 0, 60, 0);
 
-                    assert destLoc != null;
-                    p.teleport(destLoc);
-                    p.setBedSpawnLocation(destSpawnworldloc, true);
+                    if(destLoc != null)
+                    {
+                        p.teleport(destLoc);
+                    }
+                    else
+                    {
+                        p.sendMessage(ChatColor.RED + "Your last coordinates could not be found. You will be teleported to 0, 0");
+                        p.teleport(fallbackLoc);
+                    }
+
+                    if(destSpawnworldloc != null)
+                        p.setBedSpawnLocation(destSpawnworldloc, true);
+                    else
+                        p.setBedSpawnLocation(fallbackLoc, true);
 
                     p.setLevel(destLevel);
                     p.setExp((float) destXp);
