@@ -1,8 +1,13 @@
 main: me.lowlauch.multipleworlds.Main
 name: MultipleWorlds
-version: '1.0'
+version: '1.2'
 description: Allows you to use multiple worlds on a freebuild server
 author: lowlauch
+api-version: 1.16
+depend:
+  # These plugins are required for creating multiple worlds and linking the right nether with the right world.
+  - Multiverse-Core
+  - Multiverse-NetherPortals
 commands:
   mworld:
     description: Switches worlds

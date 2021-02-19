@@ -20,9 +20,9 @@ public class Main extends JavaPlugin
 
         getLogger().info("Plugin wurde aktiviert");
 
-        Objects.requireNonNull(this.getCommand("mw")).setExecutor(new Commands());
-        Objects.requireNonNull(this.getCommand("mworld")).setExecutor(new Commands());
-        Objects.requireNonNull(this.getCommand("switch")).setExecutor(new Commands());
+        Commands commands = new Commands();
+        Objects.requireNonNull(this.getCommand("mw")).setExecutor(commands);
+        Objects.requireNonNull(this.getCommand("switch")).setExecutor(commands);
 
         this.saveDefaultConfig();
         this.getConfig().options().copyDefaults(true);

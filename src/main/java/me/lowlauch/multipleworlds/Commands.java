@@ -58,10 +58,30 @@ public class Commands implements CommandExecutor
 
     public boolean onCommand(CommandSender commandSender, Command command, String commandLabel, String[] args)
     {
+        // Admin command
+        if(commandLabel.equalsIgnoreCase("mw") && commandSender.isOp())
+        {
+            // Automates creating a multiple new worlds
+            if(args[0].equalsIgnoreCase("create"))
+            {
+                if(args.length == 2)
+                {
+                    Bukkit.getServer().dispatchCommand(commandSender, "mv create " + args[1]);
+                    Bukkit.getServer().dispatchCommand(commandSender, "mv create " + args[1] + "_nether");
+                    Bukkit.getServer().dispatchCommand(commandSender, "mv create " + args[1] + "_the_end");
+
+                    // Workaround for multiverse end portals not working
+                    Bukkit.getServer().dispatchCommand(commandSender, "mv modify set respawnWorld " + args[1] + " " + args[1] + "_the_end");
+
+                } else
+                    commandSender.sendMessage(ChatColor.RED + "You have to put in a world name!");
+
+                return true;
+            }
+        }
+
         // Command to switch worlds
-        if(commandLabel.equalsIgnoreCase("mworld")
-                || commandLabel.equalsIgnoreCase("switch")
-                || commandLabel.equalsIgnoreCase("mw"))
+        if(commandLabel.equalsIgnoreCase("switch"))
         {
             Player p = (Player) commandSender;
 
