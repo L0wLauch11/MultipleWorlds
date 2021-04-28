@@ -1,16 +1,11 @@
 package me.lowlauch.multipleworlds;
 
-import io.netty.channel.Channel;
-import io.netty.util.AttributeKey;
-import net.minecraft.server.v1_16_R3.EntityPlayer;
-import net.minecraft.server.v1_16_R3.NetworkManager;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
-import org.bukkit.craftbukkit.v1_16_R3.entity.CraftPlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
@@ -19,7 +14,7 @@ import java.util.Objects;
 
 public class Commands implements CommandExecutor
 {
-    private void savePlayerData(Player p)
+    public static void savePlayerData(Player p)
     {
         // Save the previous data world first
         String uuid = p.getUniqueId().toString();
@@ -92,9 +87,9 @@ public class Commands implements CommandExecutor
                             Main.getInstance().getConfig().set("mw." + args[1] + ".everyone", false);
 
                             // Allow only server version per default
-                            Main.getInstance().getConfig().set("mw." + args[1] + ".allowedversions", "754");
+                            Main.getInstance().getConfig().set("mw." + args[1] + ".allowedversions", Protocol.getServerProtocolVersion().toString());
 
-                            Main.getInstance().getConfig().set("mw." + args[1] + ".allowedplayers", "a");
+                            Main.getInstance().getConfig().set("mw." + args[1] + ".allowedplayers", "");
 
                             Main.getInstance().saveConfig();
 
