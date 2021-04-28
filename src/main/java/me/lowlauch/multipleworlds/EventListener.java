@@ -3,6 +3,7 @@ package me.lowlauch.multipleworlds;
 import net.minecraft.server.v1_16_R3.PacketListener;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
+import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -16,12 +17,17 @@ public class EventListener implements Listener
     @EventHandler
     public void onPlayerJoinEvent(PlayerJoinEvent e)
     {
-        Player p = (Player) e.getPlayer();
+        Player p = e.getPlayer();
+        p.getAttribute(Attribute.GENERIC_ATTACK_SPEED).setBaseValue(4); // Set attack speed value to default
 
         // Mismatching client to server versions
         int playerVersion = Protocol.getClientProtocolVersion(e.getPlayer());
         if(Main.getInstance().getProtocolSupportInstalled() && playerVersion != Protocol.getServerProtocolVersion())
         {
+            // Check if player version is <1.9
+            if(playerVersion < 107)
+                p.getAttribute(Attribute.GENERIC_ATTACK_SPEED).setBaseValue(16); // 1.8 like pvp cooldown
+
             // Check if player is allowed to be in current world
             Location fallback = Main.getInstance().getConfig().getLocation("mw.fallback");
             String currentWorldName = Objects.requireNonNull(e.getPlayer().getLocation().getWorld()).getName();
