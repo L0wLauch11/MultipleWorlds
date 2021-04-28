@@ -1,11 +1,16 @@
 package me.lowlauch.multipleworlds;
 
+import io.netty.channel.Channel;
+import io.netty.util.AttributeKey;
+import net.minecraft.server.v1_16_R3.EntityPlayer;
+import net.minecraft.server.v1_16_R3.NetworkManager;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.craftbukkit.v1_16_R3.entity.CraftPlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
@@ -14,12 +19,11 @@ import java.util.Objects;
 
 public class Commands implements CommandExecutor
 {
-    public void savePlayerData(Player p)
+    private void savePlayerData(Player p)
     {
         // Save the previous data world first
         String uuid = p.getUniqueId().toString();
         String savePath = uuid + "." + p.getWorld().getName();
-
 
         // Create variables for everything we want to save
         String inventoryString = StringInventory.itemStackArrayToBase64(p.getInventory().getContents());
@@ -61,124 +65,162 @@ public class Commands implements CommandExecutor
     {
         // Admin command
         boolean permission = commandSender.isOp() || commandSender.hasPermission("multipleworlds.admin");
-        if(commandLabel.equalsIgnoreCase("mw") && permission)
+        if(commandLabel.equalsIgnoreCase("mworld") && permission)
         {
-            // Creates a new "dimension"
-            if(args[0].equalsIgnoreCase("create"))
+            if(args.length >= 1)
             {
-                if(args.length == 2)
+                switch(args[0].toLowerCase())
                 {
-                    // Create overworld, nether and the end
-                    Bukkit.getServer().dispatchCommand(commandSender, "mv create " + args[1]);
-                    Bukkit.getServer().dispatchCommand(commandSender, "mv create " + args[1] + "_nether");
-                    Bukkit.getServer().dispatchCommand(commandSender, "mv create " + args[1] + "_the_end");
-
-                    // Workaround for multiverse end portals not working
-                    Bukkit.getServer().dispatchCommand(commandSender, "mv modify set respawnWorld " + args[1] + " " + args[1] + "_the_end");
-
-                    // Set right respawnworld for nether
-                    Bukkit.getServer().dispatchCommand(commandSender, "mvm set respawnworld " + args[1] + " " + args[1] + "_nether");
-
-                    // Allow this dimension to be switchable
-                    Main.getInstance().getConfig().set("mw." + args[1] + ".switchable", true);
-
-                    // Only allow people with permission to switch to this world
-                    Main.getInstance().getConfig().set("mw." + args[1] + ".everyone", false);
-
-                    // Allow only server version per default
-                    Main.getInstance().getConfig().set("mw." + args[1] + ".allowedversions", Bukkit.getVersion());
-
-                    Main.getInstance().getConfig().set("mw." + args[1] + ".allowedplayers", "a");
-
-                    Main.getInstance().saveConfig();
-
-                } else
-                    commandSender.sendMessage(ChatColor.RED + "You have to put in a world name!");
-
-                return true;
-            }
-
-            // Allows everyone or disallows everyone to switch to a specific world
-            if(args[0].equalsIgnoreCase("everyone"))
-            {
-                if(args.length == 3)
-                {
-                    String world = args[1];
-
-                    if(args[2].equalsIgnoreCase("true") || args[2].equalsIgnoreCase("false"))
-                    {
-                        Main.getInstance().getConfig().set("mw." + world + ".everyone", Boolean.parseBoolean(args[2]));
-                        Main.getInstance().saveConfig();
-                        commandSender.sendMessage(ChatColor.GREEN + "Sucessfully changed value to " + ChatColor.GOLD + args[2]);
-                    }
-                } else
-                    commandSender.sendMessage(ChatColor.RED + "Provide a world and \"true\" or \"false\"");
-
-                return true;
-            }
-
-            // Enables or disables switching to a specific world
-            if(args[0].equalsIgnoreCase("switchable"))
-            {
-                if(args.length == 3)
-                {
-                    String world = args[1];
-
-                    if(args[2].equalsIgnoreCase("true") || args[2].equalsIgnoreCase("false"))
-                    {
-                        Main.getInstance().getConfig().set("mw." + world + ".switchable", Boolean.parseBoolean(args[1]));
-                        Main.getInstance().saveConfig();
-                        commandSender.sendMessage(ChatColor.GREEN + "Sucessfully changed value to " + ChatColor.GOLD + args[2]);
-                    }
-                } else
-                    commandSender.sendMessage(ChatColor.RED + "Provide a world and \"true\" or \"false\"");
-
-                return true;
-            }
-
-            // Allows/Disallows a certain player to switch to a world
-            if(args[0].equalsIgnoreCase("allowplayer"))
-            {
-                if(args.length == 4)
-                {
-                    String world = args[1];
-
-                    String playerUUID;
-                    if(Bukkit.getPlayer(args[3]) == null)
-                        playerUUID = Bukkit.getOfflinePlayer(args[3]).getUniqueId().toString();
-                    else
-                        playerUUID = Objects.requireNonNull(Bukkit.getPlayer(args[3])).getUniqueId().toString();
-
-                    if(args[2].equalsIgnoreCase("true") || args[2].equalsIgnoreCase("false"))
-                    {
-                        String allowedPlayers = Main.getInstance().getConfig().getString("mw." + world + ".allowedplayers");
-
-                        // Allow or disallow
-                        boolean allow = Boolean.parseBoolean(args[2]);
-                        assert allowedPlayers != null;
-                        if(allow)
+                    case "create": // Creates a new dimension
+                        if(args.length == 2)
                         {
-                            if(!allowedPlayers.contains(playerUUID))
-                                Main.getInstance().getConfig().set("mw." + world + ".allowedplayers", allowedPlayers + " " + playerUUID);
-                        }
-                        else
-                        {
-                            Main.getInstance().getConfig().set("mw." + world + ".allowedplayers", allowedPlayers.replaceAll(playerUUID, ""));
-                        }
+                            // Create overworld, nether and the end
+                            Bukkit.getServer().dispatchCommand(commandSender, "mv create " + args[1] + " normal");
+                            Bukkit.getServer().dispatchCommand(commandSender, "mv create " + args[1] + "_nether nether");
+                            Bukkit.getServer().dispatchCommand(commandSender, "mv create " + args[1] + "_the_end end");
 
+                            // Workaround for multiverse end portals not working
+                            Bukkit.getServer().dispatchCommand(commandSender, "mv modify set respawnWorld " + args[1] + " " + args[1] + "_the_end");
+
+                            // Set right respawnworld for nether
+                            Bukkit.getServer().dispatchCommand(commandSender, "mvm set respawnworld " + args[1] + " " + args[1] + "_nether");
+
+                            // Allow this dimension to be switchable
+                            Main.getInstance().getConfig().set("mw." + args[1] + ".switchable", true);
+
+                            // Only allow people with permission to switch to this world
+                            Main.getInstance().getConfig().set("mw." + args[1] + ".everyone", false);
+
+                            // Allow only server version per default
+                            Main.getInstance().getConfig().set("mw." + args[1] + ".allowedversions", "754");
+
+                            Main.getInstance().getConfig().set("mw." + args[1] + ".allowedplayers", "a");
+
+                            Main.getInstance().saveConfig();
+
+                        } else
+                            commandSender.sendMessage(ChatColor.RED + "You have to put in a world name!");
+
+                        return true;
+
+                    case "allowprotocol": // Allows a specific minecraft version for a world
+                        if(args.length == 4)
+                        {
+                            String world = args[1];
+
+                            if(args[2].equalsIgnoreCase("true") || args[2].equalsIgnoreCase("false"))
+                            {
+                                String allowedVersions = Main.getInstance().getConfig().getString("mw." + world + ".allowedversions");
+
+                                // Allow or disallow
+                                boolean allow = Boolean.parseBoolean(args[2]);
+                                if(allow)
+                                {
+                                    Main.getInstance().getConfig().set("mw." + world + ".allowedversions", allowedVersions + " " + args[3]);
+                                } else
+                                {
+                                    assert allowedVersions != null;
+                                    Main.getInstance().getConfig().set("mw." + world + ".allowedversions", allowedVersions.replaceAll(args[3], ""));
+                                }
+                                Main.getInstance().saveConfig();
+
+                                String s = args[2].replaceAll("true", "§aallowed ");
+                                s = s.replaceAll("false", "§cdisallowed ");
+
+                                commandSender.sendMessage(ChatColor.GREEN + "Sucessfully " + s + " Protocol Version " + args[3]);
+                            }
+                        } else
+                            commandSender.sendMessage(ChatColor.RED + "Provide a world, \"true\" or \"false\" and a protocol version");
+
+                        return true;
+
+                    case "everyone": // Allows everyone or disallows everyone to switch to a specific world
+                        if(args.length == 3)
+                        {
+                            String world = args[1];
+
+                            if(args[2].equalsIgnoreCase("true") || args[2].equalsIgnoreCase("false"))
+                            {
+                                Main.getInstance().getConfig().set("mw." + world + ".everyone", Boolean.parseBoolean(args[2]));
+                                Main.getInstance().saveConfig();
+                                commandSender.sendMessage(ChatColor.GREEN + "Sucessfully added value to " + ChatColor.GOLD + args[2]);
+                            }
+                        } else
+                            commandSender.sendMessage(ChatColor.RED + "Provide a world and \"true\" or \"false\"");
+
+                        return true;
+
+                    case "switchable": // Enables or disables switching to a specific world
+                        if(args.length == 3)
+                        {
+                            String world = args[1];
+
+                            if(args[2].equalsIgnoreCase("true") || args[2].equalsIgnoreCase("false"))
+                            {
+                                Main.getInstance().getConfig().set("mw." + world + ".switchable", Boolean.parseBoolean(args[1]));
+                                Main.getInstance().saveConfig();
+                                commandSender.sendMessage(ChatColor.GREEN + "Sucessfully changed value to " + ChatColor.GOLD + args[2]);
+                            }
+                        } else
+                            commandSender.sendMessage(ChatColor.RED + "Provide a world and \"true\" or \"false\"");
+
+                        return true;
+
+                    case "setfallback": // Sets the world a player will be sent to if the version isn't the servers version
+                        Player p = (Player) commandSender;
+                        Main.getInstance().getConfig().set("mw.fallback", p.getLocation());
                         Main.getInstance().saveConfig();
 
-                        String s = args[2].replaceAll("true", "§aallowed ");
-                        s = s.replaceAll("false", "§cdisallowed ");
+                        commandSender.sendMessage(ChatColor.GREEN + "Sucessfully set the fallback location to the current location");
 
-                        commandSender.sendMessage(ChatColor.GREEN + "Sucessfully " + s + ChatColor.GOLD + playerUUID
-                                + " to switch to world " + ChatColor.GOLD + world);
-                    }
-                } else
-                    commandSender.sendMessage(ChatColor.RED + "Provide a world, \"true\" or \"false\" and a player name");
+                        return true;
 
-                return true;
-            }
+                    case "allowplayer": // Allows/Disallows a certain player to switch to a world
+                        if(args.length == 4)
+                        {
+                            String world = args[1];
+
+                            String playerUUID;
+                            if(Bukkit.getPlayer(args[3]) == null)
+                                playerUUID = Bukkit.getOfflinePlayer(args[3]).getUniqueId().toString();
+                            else
+                                playerUUID = Objects.requireNonNull(Bukkit.getPlayer(args[3])).getUniqueId().toString();
+
+                            if(args[2].equalsIgnoreCase("true") || args[2].equalsIgnoreCase("false"))
+                            {
+                                String allowedPlayers = Main.getInstance().getConfig().getString("mw." + world + ".allowedplayers");
+
+                                // Allow or disallow
+                                boolean allow = Boolean.parseBoolean(args[2]);
+                                assert allowedPlayers != null;
+                                if(allow)
+                                {
+                                    if(!allowedPlayers.contains(playerUUID))
+                                        Main.getInstance().getConfig().set("mw." + world + ".allowedplayers", allowedPlayers + " " + playerUUID);
+                                } else
+                                {
+                                    Main.getInstance().getConfig().set("mw." + world + ".allowedplayers", allowedPlayers.replaceAll(playerUUID, ""));
+                                }
+
+                                Main.getInstance().saveConfig();
+
+                                String s = args[2].replaceAll("true", "§aallowed ");
+                                s = s.replaceAll("false", "§cdisallowed ");
+
+                                commandSender.sendMessage(ChatColor.GREEN + "Sucessfully " + s + ChatColor.GOLD + playerUUID
+                                        + " to switch to world " + ChatColor.GOLD + world);
+                            }
+                        } else
+                            commandSender.sendMessage(ChatColor.RED + "Provide a world, \"true\" or \"false\" and a player name");
+
+                        return true;
+
+                    case "default":
+                        return false;
+
+                }
+            } else
+                return false;
         }
 
         // Command to switch worlds
@@ -199,6 +241,36 @@ public class Commands implements CommandExecutor
                     return true;
                 }
 
+                String playerVersion = "latest";
+
+                // This feature is only useful if the server even supports multiple game versions
+                if(Main.getInstance().getProtocolSupportInstalled())
+                    playerVersion = Integer.toString(Protocol.getClientProtocolVersion(p));
+
+                // Check if player has correct version
+                if(!playerVersion.equalsIgnoreCase("latest"))
+                {
+                    Bukkit.getLogger().info("Player with protocol version " + playerVersion + " tried to switch dimensions.");
+
+                    String allowedVersions = Main.getInstance().getConfig().getString("mw." + args[0] + ".allowedversions");
+                    assert allowedVersions != null;
+                    String[] versions = allowedVersions.split(" ");
+                    boolean allow = false;
+                    for(String version : versions)
+                    {
+                        if(version.equalsIgnoreCase(playerVersion))
+                        {
+                            allow = true;
+                            break;
+                        }
+                    }
+
+                    if(!allow)
+                    {
+                        commandSender.sendMessage(ChatColor.RED + "You do not have the correct minecraft version (" + playerVersion + ")");
+                        return true;
+                    }
+                }
                 // Switch world
                 if(permission && !p.getWorld().getName().endsWith("_nether") && !p.getWorld().getName().endsWith("_end"))
                 {

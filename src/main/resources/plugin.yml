@@ -8,13 +8,12 @@ depend:
   # These plugins are required for creating multiple worlds and linking the right nether with the right world.
   - Multiverse-Core
   - Multiverse-NetherPortals
+softdepend:
+  - ProtocolSupport # This plugin allows players on older versions to connect and getting the player's client version
 commands:
   mworld:
+    description: Command for creating worlds and all kinds of stuff
+    usage: /mworld <parameters>
+  switch:
     description: Switches worlds
-    aliases:
-      - mw
-      - switch
-permissions:
-  multipleworlds.switch:
-    description: Allows the player to switch worlds
-    default: true
+    usage: /switch <world>
